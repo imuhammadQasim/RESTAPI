@@ -1,0 +1,32 @@
+{
+  "name": "restful-apis",
+  "version": "1.0.0",
+  "description": "restful APis",
+  "keywords": [
+    "restful",
+    "Apis"
+  ],
+  "homepage": "https://github.com/imuhammadQasim/nodejs#readme",
+  "bugs": {
+    "url": "https://github.com/imuhammadQasim/nodejs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imuhammadQasim/nodejs.git"
+  },
+  "license": "ISC",
+  "author": "MQasim.dev",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
