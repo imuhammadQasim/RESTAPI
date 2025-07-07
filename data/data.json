@@ -73,5 +73,34 @@
     ],
     "duration_minutes": 125,
     "rating": 10
+  },
+  {
+    "id": 8,
+    "title": "The Fighter",
+    "director": "John Alex",
+    "year": 2015,
+    "genre": [
+      "Social",
+      "Invention",
+      "Technology"
+    ],
+    "duration_minutes": 225,
+    "rating": 10
+  },
+  {
+    "id": 9
+  },
+  {
+    "id": 10,
+    "title": "The Younger",
+    "director": "Henry",
+    "year": 2015,
+    "genre": [
+      "Sea",
+      "Danger",
+      "latest"
+    ],
+    "duration_minutes": 225,
+    "rating": 10
   }
 ]
