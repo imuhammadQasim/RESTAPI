@@ -1,8 +1,8 @@
 const fs = require('fs');
 const movies = JSON.parse(fs.readFileSync('./data/data.json', 'utf8'))
-
+const Movie = require('../model/movieModel');
 exports.validateMovieData = (req, res, next) => {
-  if (!req.body || !req.body.title || !req.body.year || !req.body.genre) {
+  if (!req.body || !req.body.title || !req.body.releaseDate || !req.body.genre) {
     return res.status(400).json({
       message: 'Invalid movie data! Please provide title, year, and genre.',
       success: false
@@ -11,133 +11,135 @@ exports.validateMovieData = (req, res, next) => {
   next();
 }
 // Getting all Moveies
-exports.getAllMovies =(req, res) => {
+exports.getAllMovies = async (req, res) => {
   try {
+    const movies = await Movie.find().sort({ createdAt: 1 });
+    if (!movies || movies.length === 0) {
+      return res.status(404).json({
+        message: 'No movies found',
+        success: false
+      });
+    }
     res.status(200).json({
-      message: 'Movies data retrieved successfully',
-      count: movies.length,
-      requestedAt: req.requestedAt,
+      message: 'Movies fetched successfully',
+      countMovies: movies.length,
       success: true,
       data: movies
     });
   } catch (error) {
+    console.error('Error fetching movies:', error);
     res.status(500).json({
-      message: 'Internal Server Error! Error updating movie',
+      message: 'Internal server error',
       success: false
     });
+
   }
 }
 // Getting a single movie
-exports.getMovieById = (req, res) => {
+exports.getMovieById = async (req, res) => {
   try {
-    const movieId = parseInt(req.params.id, 10);
-    const movie = movies.find(m => m.id === movieId);
-    if (!movie) {
-      res.status(404).json({
+    const movieId = req.params.id;
+    const movies = await Movie.findById(movieId);
+    if (!movies) {
+      return res.status(404).json({
         message: 'Movie not found',
         success: false
       });
-    } else {
-      res.status(200).json({
-        message: 'Movie data retrieved successfully',
-        success: true,
-        data: movie
-      });
     }
+    res.status(200).json({
+      message: 'Movie fetched successfully',
+      success: true,
+      data: movies,
+    });
   } catch (error) {
+    console.error('Error fetching movie:', error);
     res.status(500).json({
-      message: 'Internal Server Error! Error updating movie',
+      message: 'Internal server error',
       success: false
     });
+
   }
 }
 // Create a New Movie and write to the file
-exports.createMovie = (req, res) => {
+exports.createMovie = async(req, res) => {
   try {
-    const newId = movies[movies.length - 1].id + 1;
-    const newMovie = { id: newId, ...req.body };
-    movies.push(newMovie);
-    fs.writeFile('./data/data.json', JSON.stringify(movies, null, 2), (err) => {
-      if (err) {
-        return res.status(500).send('Error writing data');
-      }
-    });
+    const existingMovie = await Movie.findOne({ title: req.body.title });
+    if (existingMovie) {
+      return res.status(400).json({
+        message: 'Movie with this title already exists',
+        success: false
+      });
+    }
+    const newMovie = await Movie.create(req.body);
+    newMovie.save();
     res.status(201).json({
-      message: 'Movie added successfully',
+      message: 'Movie created successfully',
       success: true,
       data: newMovie
-    })
+    });
+
   } catch (error) {
+    console.error('Error creating movie:', error);
+
+     if (error.code === 11000) {
+      return res.status(409).json({
+        message: 'Movie with this title already exists',
+        success: false
+      });
+    }
+
     res.status(500).json({
-      message: 'Internal Server Error! Error updating movie',
+      message: 'Internal server error',
       success: false
     });
 
   }
 }
 // Update a Movie
-exports.updateMovie = (req, res) => {
+exports.updateMovie = async (req, res) => {
   try {
-    const movieId = parseInt(req.params.id, 10);
-    const index = movies.findIndex(m => m.id === movieId);
-
-    if (index === -1) {
+    const movieId = req.params.id;
+    const updatedData = req.body;
+    const movie = await Movie.findByIdAndUpdate(movieId, updatedData, { new: true , runValidators: true });
+    if (!movie) {
       return res.status(404).json({
         message: 'Movie not found',
         success: false
       });
     }
-
-    // Merge the existing movie with the updated fields
-    const updatedMovie = { ...movies[index], ...req.body };
-
-    movies[index] = updatedMovie;
-
-    fs.writeFile('./data/data.json', JSON.stringify(movies, null, 2), (err) => {
-      if (err) {
-        return res.status(500).json({
-          message: 'Error writing data',
-          success: false
-        });
-      }
-
-      res.status(200).json({
-        message: 'Movie updated successfully',
-        success: true,
-        data: updatedMovie
-      });
+    res.status(200).json({
+      message: 'Movie updated successfully',
+      success: true,
+      data: movie
     });
-
   } catch (error) {
+    console.error('Error updating movie:', error);
     res.status(500).json({
-      message: 'Internal Server Error! Error updating movie',
+      message: 'Internal server error',
       success: false
     });
   }
 }
 // Delete a Movie
-exports.deleteMovie = (req, res) => {
-  movieId = parseInt(req.params.id, 10);
-  const movieToDelete = movies.find(m => m.id === movieId);
-  const index = movies.findIndex(m => m.id === movieId);
-  if (!movieToDelete || index === -1) {
-    return res.status(404).json({
-      message: 'Movie not found',
-      success: false
-    });
-  }
-  movies.splice(index, 1);
-  fs.writeFile('./data/data.json', JSON.stringify(movies, null, 2), (err) => {
-    if (err) {
-      return res.status(500).json({
-        message: 'Error writing data',
+exports.deleteMovie = async (req, res) => {
+  try {
+    const movieId = req.params.id;
+    const movie = await Movie.findByIdAndDelete(movieId);
+    if (!movie) {
+      return res.status(404).json({
+        message: 'Movie not found',
         success: false
       });
     }
-    res.status(204).json({
+    res.status(200).json({
       message: 'Movie deleted successfully',
-      success: true,
-      data: null
+      success: true
     });
-  })
+  } catch (error) {
+    console.error('Error deleting movie:', error);
+    res.status(500).json({
+      message: 'Internal server error',
+      success: false
+    });
+  }
 }
