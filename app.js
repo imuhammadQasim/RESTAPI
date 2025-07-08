@@ -3,7 +3,6 @@ const app = express();
 const movieRouter = require('./routes/movieRoutes');
 
 
-
 app.use(express.json());
 app.use(express.static('public'));
 // app.use((req, res, next) => {
