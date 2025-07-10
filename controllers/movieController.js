@@ -13,28 +13,57 @@ exports.validateMovieData = (req, res, next) => {
 // Getting all Moveies
 exports.getAllMovies = async (req, res) => {
   try {
-    const movies = await Movie.find().sort({ createdAt: 1 });
-    if (!movies || movies.length === 0) {
+    // Step 1: Clone req.query and remove reserved fields
+    const queryObj = { ...req.query };
+    const excludedFields = ['sort', 'page', 'limit', 'fields'];
+    excludedFields.forEach(field => delete queryObj[field]);
+
+    // Step 2: Build MongoDB filter
+    const mongoQuery = {};
+
+    for (const key in queryObj) {
+      const value = queryObj[key];
+      const match = key.match(/^(\w+)\[(\w+)\]$/); // e.g. duration[gte]
+
+      if (match) {
+        const field = match[1];       // e.g. "duration"
+        const operator = match[2];    // e.g. "gte"
+
+        if (!mongoQuery[field]) mongoQuery[field] = {};
+        mongoQuery[field][`$${operator}`] = isNaN(value) ? value : Number(value);
+      } else {
+        mongoQuery[key] = isNaN(value) ? value : Number(value);
+      }
+    }
+
+    console.log('MongoDB Filter:', mongoQuery);
+
+    const movies = await Movie.find(mongoQuery);
+
+    if (!movies.length) {
       return res.status(404).json({
         message: 'No movies found',
         success: false
       });
     }
+
     res.status(200).json({
       message: 'Movies fetched successfully',
-      countMovies: movies.length,
+      count: movies.length,
       success: true,
       data: movies
     });
+
   } catch (error) {
     console.error('Error fetching movies:', error);
     res.status(500).json({
       message: 'Internal server error',
       success: false
     });
-
   }
-}
+};
+
+
 // Getting a single movie
 exports.getMovieById = async (req, res) => {
   try {
@@ -61,7 +90,7 @@ exports.getMovieById = async (req, res) => {
   }
 }
 // Create a New Movie and write to the file
-exports.createMovie = async(req, res) => {
+exports.createMovie = async (req, res) => {
   try {
     const existingMovie = await Movie.findOne({ title: req.body.title });
     if (existingMovie) {
@@ -81,7 +110,7 @@ exports.createMovie = async(req, res) => {
   } catch (error) {
     console.error('Error creating movie:', error);
 
-     if (error.code === 11000) {
+    if (error.code === 11000) {
       return res.status(409).json({
         message: 'Movie with this title already exists',
         success: false
@@ -100,7 +129,7 @@ exports.updateMovie = async (req, res) => {
   try {
     const movieId = req.params.id;
     const updatedData = req.body;
-    const movie = await Movie.findByIdAndUpdate(movieId, updatedData, { new: true , runValidators: true });
+    const movie = await Movie.findByIdAndUpdate(movieId, updatedData, { new: true, runValidators: true });
     if (!movie) {
       return res.status(404).json({
         message: 'Movie not found',
