@@ -36,10 +36,16 @@ exports.getAllMovies = async (req, res) => {
       }
     }
 
-    console.log('MongoDB Filter:', mongoQuery);
+    // console.log('MongoDB Filter:', mongoQuery);    
+    let query = Movie.find(mongoQuery);
 
-    const movies = await Movie.find(mongoQuery);
-
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt');
+    }
+    const movies = await query;
     if (!movies.length) {
       return res.status(404).json({
         message: 'No movies found',
@@ -57,7 +63,7 @@ exports.getAllMovies = async (req, res) => {
   } catch (error) {
     console.error('Error fetching movies:', error);
     res.status(500).json({
-      message: 'Internal server error',
+      message: `Internal server error - ${error.message}`,
       success: false
     });
   }
