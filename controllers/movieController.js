@@ -45,7 +45,29 @@ exports.getAllMovies = async (req, res) => {
     } else {
       query = query.sort('-createdAt');
     }
+    // Limiting Feilds
+    if (req.query.fields) {
+      console.log('Fields to select:', req.query.fields);
+      const fields = req.query.fields.split(',').join(' ');
+      query = query.select(fields);      
+    }
+
+    // Paginaton
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 10;
+    const skip = (page - 1) * limit;
+    query = query.skip(skip).limit(limit);
+    
     const movies = await query;
+    const movieCount = await Movie.countDocuments();
+    console.log('Total Movies:', movieCount);
+    if (skip > movieCount) {
+      return res.status(404).json({
+        message: 'No movies found for the requested page',
+        success: false
+      });
+    }
+
     if (!movies.length) {
       return res.status(404).json({
         message: 'No movies found',
@@ -68,7 +90,6 @@ exports.getAllMovies = async (req, res) => {
     });
   }
 };
-
 
 // Getting a single movie
 exports.getMovieById = async (req, res) => {

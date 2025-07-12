@@ -8,6 +8,10 @@ const { getAllMovies, getMovieById, createMovie, updateMovie, deleteMovie ,valid
 // app.post('/api/v1/data', createMovie);
 // app.patch('/api/v1/data/:id', updateMovie);
 // app.delete('/api/v1/data/:id',deleteMovie );
+
+router.route('./highest-rated')
+.get(getAllMovies);
+
 router.route('/')
   .get(getAllMovies)
   .post(validateMovieData, createMovie);
